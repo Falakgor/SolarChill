@@ -20,46 +20,138 @@ async function startServer() {
         const database = client.db("cold_storage");
         const sensorData = database.collection("sensor_data");
 
-        // Home route
+        // ==================================================
+        // HOME ROUTE
+        // ==================================================
+
         app.get("/", (req, res) => {
             res.send("Smart Cold Storage API is running!");
         });
 
-        // Receive sensor data
+
+        // ==================================================
+        // RECEIVE SENSOR DATA
+        // ==================================================
+
         app.post("/api/sensor-data", async (req, res) => {
+
             try {
-                const { temperature, humidity } = req.body;
+
+                const {
+                    temperature,
+                    status,
+                    fanSpeed,
+                    pwm
+                } = req.body;
+
+
+                // ------------------------------------------
+                // Basic validation
+                // ------------------------------------------
+
+                if (
+                    temperature === undefined ||
+                    status === undefined ||
+                    fanSpeed === undefined ||
+                    pwm === undefined
+                ) {
+
+                    return res.status(400).json({
+                        message: "Missing sensor data"
+                    });
+
+                }
+
+
+                // ------------------------------------------
+                // Data object
+                // ------------------------------------------
 
                 const data = {
-                    temperature: temperature,
-                    humidity: humidity,
+
+                    temperature: Number(temperature),
+
+                    status: String(status),
+
+                    fanSpeed: Number(fanSpeed),
+
+                    pwm: Number(pwm),
+
                     timestamp: new Date()
+
                 };
 
-                const result = await sensorData.insertOne(data);
+
+                // ------------------------------------------
+                // Save to MongoDB
+                // ------------------------------------------
+
+                const result =
+                    await sensorData.insertOne(data);
+
+
+                // ------------------------------------------
+                // Response
+                // ------------------------------------------
 
                 res.status(201).json({
-                    message: "Sensor data saved successfully!",
+
+                    message:
+                        "Sensor data saved successfully!",
+
                     id: result.insertedId
+
                 });
 
-            } catch (error) {
-                console.error(error);
-                res.status(500).json({
-                    message: "Failed to save sensor data"
-                });
             }
+
+            catch (error) {
+
+                console.error(
+                    "Error saving sensor data:",
+                    error
+                );
+
+                res.status(500).json({
+
+                    message:
+                        "Failed to save sensor data"
+
+                });
+
+            }
+
         });
 
-        const PORT =  process.env.PORT || 3000;
+
+        // ==================================================
+        // START SERVER
+        // ==================================================
+
+        const PORT =
+            process.env.PORT || 3000;
+
 
         app.listen(PORT, () => {
-            console.log(`Server running on http://localhost:${PORT}`);
+
+            console.log(
+                `Server running on port ${PORT}`
+            );
+
         });
 
-    } catch (error) {
-        console.error("MongoDB connection failed:", error);
     }
+
+    catch (error) {
+
+        console.error(
+            "MongoDB connection failed:",
+            error
+        );
+
+    }
+
 }
+
 
 startServer();
