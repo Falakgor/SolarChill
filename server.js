@@ -20,6 +20,7 @@ async function startServer() {
         const database = client.db("cold_storage");
         const sensorData = database.collection("sensor_data");
 
+
         // ==================================================
         // HOME ROUTE
         // ==================================================
@@ -116,6 +117,113 @@ async function startServer() {
 
                     message:
                         "Failed to save sensor data"
+
+                });
+
+            }
+
+        });
+
+
+        // ==================================================
+        // GET LATEST SENSOR DATA
+        // ==================================================
+
+        app.get("/api/sensor-data/latest", async (req, res) => {
+
+            try {
+
+                const latestData =
+                    await sensorData
+                        .findOne(
+                            {},
+                            {
+                                sort: {
+                                    timestamp: -1
+                                }
+                            }
+                        );
+
+
+                // ------------------------------------------
+                // No data available
+                // ------------------------------------------
+
+                if (!latestData) {
+
+                    return res.status(404).json({
+
+                        message: "No sensor data available"
+
+                    });
+
+                }
+
+
+                // ------------------------------------------
+                // Send latest data
+                // ------------------------------------------
+
+                res.status(200).json(latestData);
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Error fetching latest sensor data:",
+                    error
+                );
+
+                res.status(500).json({
+
+                    message:
+                        "Failed to fetch latest sensor data"
+
+                });
+
+            }
+
+        });
+
+
+        // ==================================================
+        // GET SENSOR DATA HISTORY
+        // ==================================================
+
+        app.get("/api/sensor-data", async (req, res) => {
+
+            try {
+
+                const data =
+                    await sensorData
+                        .find({})
+                        .sort({
+                            timestamp: -1
+                        })
+                        .limit(100)
+                        .toArray();
+
+
+                // ------------------------------------------
+                // Send sensor history
+                // ------------------------------------------
+
+                res.status(200).json(data);
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Error fetching sensor data:",
+                    error
+                );
+
+                res.status(500).json({
+
+                    message:
+                        "Failed to fetch sensor data"
 
                 });
 
