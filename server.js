@@ -65,42 +65,145 @@ async function startServer() {
 
 
                 // ------------------------------------------
-                // Data object
+                // Convert values
                 // ------------------------------------------
+
+                const temp = Number(temperature);
+                const fan = Number(fanSpeed);
+                const pwmValue = Number(pwm);
+
+
+                // ------------------------------------------
+                // Validate numeric values
+                // ------------------------------------------
+
+                if (
+                    !Number.isFinite(temp) ||
+                    !Number.isFinite(fan) ||
+                    !Number.isFinite(pwmValue)
+                ) {
+
+                    return res.status(400).json({
+                        message: "Invalid sensor data"
+                    });
+
+                }
+
+
+                // ==================================================
+                // ALERT LOGIC
+                // ==================================================
+
+                let alertStatus;
+                let alert;
+                let alertMessage;
+
+
+                // ------------------------------------------
+                // NORMAL
+                // Below 22°C
+                // No alert
+                // ------------------------------------------
+
+                if (temp < 22) {
+
+                    alertStatus = "Normal";
+
+                    alert = false;
+
+                    alertMessage =
+                        "Temperature is within the safe range.";
+
+                }
+
+
+                // ------------------------------------------
+                // WARNING
+                // 22°C to 26°C
+                // ------------------------------------------
+
+                else if (temp >= 22 && temp <= 26) {
+
+                    alertStatus = "Warning";
+
+                    alert = true;
+
+                    alertMessage =
+                        "Temperature is above the normal range.";
+
+                }
+
+
+                // ------------------------------------------
+                // CRITICAL
+                // Above 26°C
+                // ------------------------------------------
+
+                else {
+
+                    alertStatus = "Critical";
+
+                    alert = true;
+
+                    alertMessage =
+                        "Critical temperature detected! Immediate attention required.";
+
+                }
+
+
+                // ==================================================
+                // DATA OBJECT
+                // ==================================================
 
                 const data = {
 
-                    temperature: Number(temperature),
+                    temperature: temp,
 
+                    // Status received from NodeMCU
                     status: String(status),
 
-                    fanSpeed: Number(fanSpeed),
+                    fanSpeed: fan,
 
-                    pwm: Number(pwm),
+                    pwm: pwmValue,
+
+                    // Alert information
+                    alertStatus: alertStatus,
+
+                    alert: alert,
+
+                    alertMessage: alertMessage,
 
                     timestamp: new Date()
 
                 };
 
 
-                // ------------------------------------------
-                // Save to MongoDB
-                // ------------------------------------------
+                // ==================================================
+                // SAVE TO MONGODB
+                // ==================================================
 
                 const result =
                     await sensorData.insertOne(data);
 
 
-                // ------------------------------------------
-                // Response
-                // ------------------------------------------
+                // ==================================================
+                // RESPONSE
+                // ==================================================
 
                 res.status(201).json({
 
                     message:
                         "Sensor data saved successfully!",
 
-                    id: result.insertedId
+                    id: result.insertedId,
+
+                    temperature: temp,
+
+                    alertStatus: alertStatus,
+
+                    alert: alert,
+
+                    alertMessage: alertMessage
 
                 });
 
